@@ -1,19 +1,25 @@
 #!/bin/bash
 
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+
 source ~/.bashrc
 
 nvm install 16
+
 nvm use 16
 
-# upgrade yum
 sudo yum update -y
-# install git
+
 sudo yum install git -y
+
 cd /home/ec2-user
-# get the source code from the github repo
+
 git clone https://github.com/waiyanhein/express-app.git
+
 cd express-app
+
 sudo chmod -R 755 .
+
 npm i
+
 node app.js > app.out.log 2> app.err.log < /dev/null &
