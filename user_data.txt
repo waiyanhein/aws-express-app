@@ -1,5 +1,7 @@
 #!/bin/bash -ex
 
+sudo -su ec2-user
+
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 source ~/.bashrc
 
