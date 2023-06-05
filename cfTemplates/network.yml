@@ -1,0 +1,187 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Network stack"
+Parameters:
+  NamePrefix:
+    Type: String
+    Default: "MenApi"
+    Description: "Prefix for all resources"
+Mappings:
+  Region:
+    Main:
+      Value: eu-west-2
+  AZs:
+    AZa:
+      Value: eu-west-2a
+    AZb:
+      Value: eu-west-2b
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "VPC" ]]
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.0.0/18
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !FindInMap [AZs, AZa, Value]
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "PublicSubnetA" ]]
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.64.0/18
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !FindInMap [AZs, AZb, Value]
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "PublicSubnetB" ]]
+  ApiPrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.128.0/19
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !FindInMap [AZs, AZa, Value]
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "ApiPrivateSubnetA" ]]
+  ApiPrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.160.0/19
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !FindInMap [AZs, AZb, Value]
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "ApiPrivateSubnetB" ]]
+  DatabasePrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.192.0/19
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !FindInMap [AZs, AZa, Value]
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "DatabasePrivateSubnetA" ]]
+  DatabasePrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.224.0/19
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !FindInMap [AZs, AZb, Value]
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "DatabasePrivateSubnetB" ]]
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "InternetGateway" ]]
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "PublicRouteTable" ]]
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  PublicRouteTablePublicSubnetAAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetA
+  PublicRouteTablePublicSubnetBAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetB
+  ElasticIpA:
+    Type: AWS::EC2::EIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "ElasticIpA" ]]
+  ElasticIpB:
+    Type: AWS::EC2::EIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "ElasticIpB" ]]
+  NatGatewayA:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref PublicSubnetA
+#      ConnectivityType: public
+      AllocationId: !GetAtt ElasticIpA.AllocationId
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "NatGatewayA" ]]
+  PrivateRouteTableA:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "PrivateRouteTableA" ]]
+  PrivateRouteAForNatA:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableA
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayA
+  PrivateRouteTableAPrivateSubnetAAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableA
+      SubnetId: !Ref ApiPrivateSubnetA
+  NatGatewayB:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref PublicSubnetB
+      AllocationId: !GetAtt ElasticIpB.AllocationId
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "NatGatewayB" ]]
+  PrivateRouteTableB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref NamePrefix, "PrivateRouteTableB" ]]
+  PrivateRouteBForNatB:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableB
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayB
+  PrivateRouteTableBPrivateSubnetBAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableB
+      SubnetId: !Ref ApiPrivateSubnetB
