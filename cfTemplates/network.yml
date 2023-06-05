@@ -14,6 +14,9 @@ Mappings:
       Value: eu-west-2a
     AZb:
       Value: eu-west-2b
+  Ports:
+    App:
+      Value: '3000' # port where the app is running
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -185,3 +188,29 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRouteTableB
       SubnetId: !Ref ApiPrivateSubnetB
+  AsgSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+        GroupDescription: Security group for the ASG, ALB and private EC2 instances as well as SSH access
+        VpcId: !Ref VPC
+        SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: '80'
+              ToPort: '80'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: tcp
+              FromPort: '443'
+              ToPort: '443'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: tcp
+              FromPort: '22'
+              ToPort: '22'
+              CidrIp: 0.0.0.0/0
+              Description: SSH access from anywhere
+            - IpProtocol: tcp
+              FromPort: !FindInMap [Ports, App, Value]
+              ToPort: !FindInMap [Ports, App, Value]
+              CidrIp: 0.0.0.0/0
+        Tags:
+            - Key: Name
+              Value: !Join ["-", [ !Ref NamePrefix, "AsgSecurityGroup" ]]
