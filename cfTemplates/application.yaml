@@ -22,6 +22,15 @@ Parameters:
   VpcExportSuffix:
     Default: "Vpc"
     Type: String
+  AsgSgExportSuffix:
+    Default: "AsgSecurityGroup"
+    Type: String
+  PublicSubnetAExportSuffix:
+    Default: "PublicSubnetA"
+    Type: String
+  PublicSubnetBExportSuffix:
+    Default: "PublicSubnetB"
+    Type: String
 Mappings:
   AWSInstanceType2Arch:
     t1.micro:
@@ -229,7 +238,7 @@ Resources:
         InstanceType: !Ref InstanceType
         KeyName: !Ref SSHKeyName
         SecurityGroupIds:
-          - Fn::ImportValue: !Join ["-", [ !Ref NetworkStackName, "AsgSecurityGroup" ]]
+          - Fn::ImportValue: !Join ["-", [ !Ref NetworkStackName, !Ref AsgSgExportSuffix ]]
         UserData:
           Fn::Base64:
             |
@@ -265,3 +274,18 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join ["-", [ !Ref AWS::StackName, "TargetGroup" ]]
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Join ["-", [ !Ref AWS::StackName, "LB" ]]
+      Type: application
+      IpAddressType: ipv4
+      Scheme: internet-facing
+      Subnets:
+        - Fn::ImportValue: !Join ["-", [ !Ref NetworkStackName, !Ref PublicSubnetAExportSuffix ]]
+        - Fn::ImportValue: !Join ["-", [ !Ref NetworkStackName, !Ref PublicSubnetBExportSuffix ]]
+      SecurityGroups:
+        - Fn::ImportValue: !Join ["-", [ !Ref NetworkStackName, !Ref AsgSgExportSuffix ]]
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref AWS::StackName, "LoadBalancer" ]]

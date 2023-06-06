@@ -10,9 +10,6 @@ Parameters:
   AZb:
     Default: 'eu-west-2b'
     Type: String
-  Region:
-    Default: 'eu-west-2'
-    Type: String
 Resources:
   VPC:
     Type: AWS::EC2::VPC
