@@ -19,6 +19,9 @@ Parameters:
   AZb:
     Default: 'eu-west-2b'
     Type: String
+  VpcExportSuffix:
+    Default: "Vpc"
+    Type: String
 Mappings:
   AWSInstanceType2Arch:
     t1.micro:
@@ -248,3 +251,17 @@ Resources:
             sudo chmod -R 755 .
             node app.js
             EOF
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Join ["-", [ !Ref AWS::StackName, "TG" ]]
+      Port: !Ref AppPort
+      Protocol: HTTP
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 120
+      HealthCheckPath: /health
+      VpcId:
+        Fn::ImportValue: !Join ["-", [ !Ref NetworkStackName, !Ref VpcExportSuffix ]]
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref AWS::StackName, "TargetGroup" ]]

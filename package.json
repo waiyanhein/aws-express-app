@@ -4,7 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "cf:deploy-network": "aws cloudformation deploy --template-file cfTemplates/network.yaml --stack-name MenApiNetworkStack  --capabilities CAPABILITY_IAM",
+    "cf:deploy-app": "aws cloudformation deploy --template-file cfTemplates/application.yaml --stack-name MenApiApplicationStack  --capabilities CAPABILITY_IAM",
+    "cf:deploy": "npm run cf:deploy-network && npm run cf:deploy-app",
+    "cf:delete-app": "aws cloudformation delete-stack --stack-name MenApiApplicationStack",
+    "cf:delete-network": "aws cloudformation delete-stack --stack-name MenApiNetworkStack",
+    "cf:delete": "npm run cf:delete-app && npm run cf:delete-network"
   },
   "author": "",
   "license": "ISC",
