@@ -1,22 +1,18 @@
-AWSTemplateFormatVersion: 2010-09-09
+AWSTemplateFormatVersion: "2010-09-09"
 Description: "Network stack"
 Parameters:
-  NamePrefix:
+  AppPort:
+    Default: '3000'
     Type: String
-    Default: "MenApi"
-    Description: "Prefix for all resources"
-Mappings:
+  AZa:
+    Default: 'eu-west-2a'
+    Type: String
+  AZb:
+    Default: 'eu-west-2b'
+    Type: String
   Region:
-    Main:
-      Value: eu-west-2
-  AZs:
-    AZa:
-      Value: eu-west-2a
-    AZb:
-      Value: eu-west-2b
-  Ports:
-    App:
-      Value: '3000' # port where the app is running
+    Default: 'eu-west-2'
+    Type: String
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -27,73 +23,73 @@ Resources:
       InstanceTenancy: default
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "VPC" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "VPC" ]]
   PublicSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.0.0/18
       MapPublicIpOnLaunch: true
-      AvailabilityZone: !FindInMap [AZs, AZa, Value]
+      AvailabilityZone: !Ref AZa
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "PublicSubnetA" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "PublicSubnetA" ]]
   PublicSubnetB:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.64.0/18
       MapPublicIpOnLaunch: true
-      AvailabilityZone: !FindInMap [AZs, AZb, Value]
+      AvailabilityZone: !Ref AZb
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "PublicSubnetB" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "PublicSubnetB" ]]
   ApiPrivateSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.128.0/19
       MapPublicIpOnLaunch: false
-      AvailabilityZone: !FindInMap [AZs, AZa, Value]
+      AvailabilityZone: !Ref AZa
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "ApiPrivateSubnetA" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "ApiPrivateSubnetA" ]]
   ApiPrivateSubnetB:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.160.0/19
       MapPublicIpOnLaunch: false
-      AvailabilityZone: !FindInMap [AZs, AZb, Value]
+      AvailabilityZone: !Ref AZb
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "ApiPrivateSubnetB" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "ApiPrivateSubnetB" ]]
   DatabasePrivateSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.192.0/19
       MapPublicIpOnLaunch: false
-      AvailabilityZone: !FindInMap [AZs, AZa, Value]
+      AvailabilityZone: !Ref AZa
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "DatabasePrivateSubnetA" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "DatabasePrivateSubnetA" ]]
   DatabasePrivateSubnetB:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.224.0/19
       MapPublicIpOnLaunch: false
-      AvailabilityZone: !FindInMap [AZs, AZb, Value]
+      AvailabilityZone: !Ref AZb
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "DatabasePrivateSubnetB" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "DatabasePrivateSubnetB" ]]
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "InternetGateway" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "InternetGateway" ]]
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -105,7 +101,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "PublicRouteTable" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "PublicRouteTable" ]]
   PublicRoute:
     Type: AWS::EC2::Route
     DependsOn: InternetGatewayAttachment
@@ -128,13 +124,13 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "ElasticIpA" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "ElasticIpA" ]]
   ElasticIpB:
     Type: AWS::EC2::EIP
     Properties:
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "ElasticIpB" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "ElasticIpB" ]]
   NatGatewayA:
     Type: AWS::EC2::NatGateway
     Properties:
@@ -143,14 +139,14 @@ Resources:
       AllocationId: !GetAtt ElasticIpA.AllocationId
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "NatGatewayA" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "NatGatewayA" ]]
   PrivateRouteTableA:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "PrivateRouteTableA" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "PrivateRouteTableA" ]]
   PrivateRouteAForNatA:
     Type: AWS::EC2::Route
     Properties:
@@ -169,14 +165,14 @@ Resources:
       AllocationId: !GetAtt ElasticIpB.AllocationId
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "NatGatewayB" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "NatGatewayB" ]]
   PrivateRouteTableB:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Join ["-", [ !Ref NamePrefix, "PrivateRouteTableB" ]]
+          Value: !Join ["-", [ !Ref AWS::StackName, "PrivateRouteTableB" ]]
   PrivateRouteBForNatB:
     Type: AWS::EC2::Route
     Properties:
@@ -208,9 +204,50 @@ Resources:
               CidrIp: 0.0.0.0/0
               Description: SSH access from anywhere
             - IpProtocol: tcp
-              FromPort: !FindInMap [Ports, App, Value]
-              ToPort: !FindInMap [Ports, App, Value]
+              FromPort: !Ref AppPort
+              ToPort: !Ref AppPort
               CidrIp: 0.0.0.0/0
         Tags:
             - Key: Name
-              Value: !Join ["-", [ !Ref NamePrefix, "AsgSecurityGroup" ]]
+              Value: !Join ["-", [ !Ref AWS::StackName, "AsgSecurityGroup" ]]
+Outputs:
+    Vpc:
+        Description: VPC
+        Value: !Ref VPC
+        Export:
+          Name: !Join ["-", [ !Ref AWS::StackName, "Vpc" ]]
+    PublicSubnetA:
+        Description: PublicSubnetA
+        Value: !Ref PublicSubnetA
+        Export:
+          Name: !Join ["-", [ !Ref AWS::StackName, "PublicSubnetA" ]]
+    PublicSubnetB:
+        Description: PublicSubnetB
+        Value: !Ref PublicSubnetB
+        Export:
+          Name: !Join ["-", [ !Ref AWS::StackName, "PublicSubnetB" ]]
+    ApiPrivateSubnetA:
+        Description: ApiPrivateSubnetA
+        Value: !Ref ApiPrivateSubnetA
+        Export:
+          Name: !Join ["-", [ !Ref AWS::StackName, "ApiPrivateSubnetA" ]]
+    ApiPrivateSubnetB:
+        Description: ApiPrivateSubnetB
+        Value: !Ref ApiPrivateSubnetB
+        Export:
+          Name: !Join ["-", [ !Ref AWS::StackName, "ApiPrivateSubnetB" ]]
+    DatabasePrivateSubnetA:
+        Description: DatabasePrivateSubnetA
+        Value: !Ref DatabasePrivateSubnetA
+        Export:
+          Name: !Join ["-", [ !Ref AWS::StackName, "DatabasePrivateSubnetA" ]]
+    DatabasePrivateSubnetB:
+        Description: DatabasePrivateSubnetB
+        Value: !Ref DatabasePrivateSubnetB
+        Export:
+          Name: !Join ["-", [ !Ref AWS::StackName, "DatabasePrivateSubnetB" ]]
+    AsgSecurityGroup:
+        Description: AsgSecurityGroup
+        Value: !Ref AsgSecurityGroup
+        Export:
+          Name: !Join ["-", [ !Ref AWS::StackName, "AsgSecurityGroup" ]]
