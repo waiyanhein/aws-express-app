@@ -31,6 +31,12 @@ Parameters:
   PublicSubnetBExportSuffix:
     Default: "PublicSubnetB"
     Type: String
+  ApiPrivateSubnetAExportSuffix:
+    Default: "ApiPrivateSubnetA"
+    Type: String
+  ApiPrivateSubnetBExportSuffix:
+    Default: "ApiPrivateSubnetB"
+    Type: String
 Mappings:
   AWSInstanceType2Arch:
     t1.micro:
@@ -289,3 +295,33 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join ["-", [ !Ref AWS::StackName, "LoadBalancer" ]]
+  # check this link for implementing https listener: https://computingforgeeks.com/configure-aws-application-load-balancer-with-cloudformation/?utm_content=cmp-true
+  LbHttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+  PrivateInstanceAsg:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: !Join ["-", [ !Ref AWS::StackName, "ASG" ]]
+      LaunchTemplate:
+        LaunchTemplateId: !Ref PrivateInstanceLaunchTemplate
+        Version: !GetAtt PrivateInstanceLaunchTemplate.LatestVersionNumber
+      MinSize: 1
+      MaxSize: 2
+      DesiredCapacity: 1
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Join ["-", [ !Ref NetworkStackName, !Ref ApiPrivateSubnetAExportSuffix ]]
+        - Fn::ImportValue: !Join ["-", [ !Ref NetworkStackName, !Ref ApiPrivateSubnetBExportSuffix ]]
+      TargetGroupARNs:
+        - !Ref TargetGroup
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ !Ref AWS::StackName, "PrivateInstanceAsg" ]]
+          PropagateAtLaunch: true
+
